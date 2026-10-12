@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const { Otp } = require('../db');
 
+const { Resend } = require('resend');
+
 // Request OTP for Login
 router.post('/send-otp', async (req, res) => {
   try {
@@ -34,11 +36,48 @@ router.post('/send-otp', async (req, res) => {
       { upsert: true, new: true }
     );
 
+    const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
     const smtpUser = (process.env.SMTP_USER || '').trim();
     const smtpPass = (process.env.SMTP_PASS || '').trim();
     const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
     const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
 
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; padding: 24px; background-color: #09090b; color: #ffffff; border-radius: 12px; max-width: 500px; margin: 0 auto;">
+        <h2 style="color: #FF6B2B; margin-top: 0;">Admin Portal OTP Verification</h2>
+        <p style="color: #d4d4d8; font-size: 14px;">Use the OTP code below to sign in to your Portfolio Admin Panel:</p>
+        <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #FF6B2B; background: #18181b; padding: 18px; text-align: center; border-radius: 8px; margin: 20px 0; border: 1px solid #27272a;">
+          ${otp}
+        </div>
+        <p style="color: #71717a; font-size: 12px;">This OTP will expire in 10 minutes. If you did not request this, please ignore this email.</p>
+      </div>
+    `;
+
+    // 1. Preferred Method: Resend HTTPS API (Never blocked on Render)
+    if (resendApiKey) {
+      const resend = new Resend(resendApiKey);
+      const fromAddress = process.env.RESEND_FROM || 'Sumit Patel Admin <onboarding@resend.dev>';
+
+      const { data, error } = await resend.emails.send({
+        from: fromAddress,
+        to: requestedEmail,
+        subject: 'Your Admin Login OTP Code',
+        text: `Your Admin OTP login code is: ${otp}. Valid for 10 minutes.`,
+        html: emailHtml
+      });
+
+      if (error) {
+        console.error('Resend delivery error:', error);
+        return res.status(500).json({ error: error.message || 'Failed to send OTP email via Resend' });
+      }
+
+      return res.json({
+        success: true,
+        message: `OTP sent successfully to ${requestedEmail}`
+      });
+    }
+
+    // 2. Fallback Method: Nodemailer SMTP
     if (smtpUser && smtpPass) {
       const transporter = nodemailer.createTransport({
         host: smtpHost,
@@ -55,28 +94,20 @@ router.post('/send-otp', async (req, res) => {
         to: requestedEmail,
         subject: 'Your Admin Login OTP Code',
         text: `Your Admin OTP login code is: ${otp}. Valid for 10 minutes.`,
-        html: `
-          <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #09090b; color: #ffffff; border-radius: 12px;">
-            <h2 style="color: #FF6B2B; margin-top: 0;">Admin Portal OTP Verification</h2>
-            <p>Use the OTP code below to sign in to your Portfolio Admin Panel:</p>
-            <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #FF6B2B; background: #18181b; padding: 16px; text-align: center; border-radius: 8px; margin: 20px 0;">
-              ${otp}
-            </div>
-            <p style="color: #a1a1aa; font-size: 13px;">This OTP will expire in 10 minutes. If you did not request this, please ignore this email.</p>
-          </div>
-        `
+        html: emailHtml
       });
 
       return res.json({
         success: true,
         message: `OTP sent successfully to ${requestedEmail}`
       });
-    } else {
-      console.error('SMTP configuration missing in .env!');
-      return res.status(500).json({
-        error: 'SMTP email configuration is missing or incomplete on the server.'
-      });
     }
+
+    // If neither is configured
+    console.error('Neither RESEND_API_KEY nor SMTP credentials found in environment variables.');
+    return res.status(500).json({
+      error: 'Email configuration is missing on the server. Please set RESEND_API_KEY in environment variables.'
+    });
   } catch (err) {
     console.error('Send OTP error:', err);
     return res.status(500).json({ error: 'Failed to send OTP email: ' + err.message });
