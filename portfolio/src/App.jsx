@@ -11,6 +11,7 @@ import Footer from './components/Footer';
 import FloatingProfileImage from './components/FloatingProfileImage';
 import AllProjectsPage from './pages/AllProjectsPage';
 import AdminPage from './pages/AdminPage';
+import { API_URL } from './config/api';
 
 // Main Portfolio Layout for User Site
 function MainPortfolio() {
@@ -128,7 +129,7 @@ export default function App() {
   // Track visitor hits on route change
   useEffect(() => {
     try {
-      fetch('http://localhost:5000/api/analytics/track', {
+      fetch(`${API_URL}/api/analytics/track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ page: location.pathname })

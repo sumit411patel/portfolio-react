@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, CheckCircle2 } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 export default function ContactSection() {
   const [formData, setFormData] = useState({
@@ -21,7 +22,7 @@ export default function ContactSection() {
     setErrorMsg('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/inquiries', {
+      const res = await fetch(`${API_URL}/api/inquiries`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

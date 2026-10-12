@@ -19,6 +19,7 @@ import {
   ExternalLink,
   AlertCircle
 } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 export default function AdminPage() {
   const [token, setToken] = useState(localStorage.getItem('adminToken') || '');
@@ -71,7 +72,7 @@ export default function AdminPage() {
 
   const verifyToken = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/auth/verify-token', {
+      const res = await fetch(`${API_URL}/api/auth/verify-token`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) {
@@ -99,7 +100,7 @@ export default function AdminPage() {
     setDevOtp(null);
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/send-otp', {
+      const res = await fetch(`${API_URL}/api/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -117,7 +118,7 @@ export default function AdminPage() {
         setAuthError(data.error || 'Failed to send OTP code.');
       }
     } catch (err) {
-      setAuthError('Connection error. Ensure backend server is running on localhost:5000.');
+      setAuthError('Connection error. Ensure backend server is running.');
     } finally {
       setAuthLoading(false);
     }
@@ -131,7 +132,7 @@ export default function AdminPage() {
     setAuthError('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/verify-otp', {
+      const res = await fetch(`${API_URL}/api/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp })
@@ -156,7 +157,7 @@ export default function AdminPage() {
   const fetchDashboardData = async () => {
     setLoadingData(true);
     try {
-      const res = await fetch('http://localhost:5000/api/analytics/dashboard', {
+      const res = await fetch(`${API_URL}/api/analytics/dashboard`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -173,7 +174,7 @@ export default function AdminPage() {
   const fetchProjects = async () => {
     setLoadingData(true);
     try {
-      const res = await fetch('http://localhost:5000/api/projects');
+      const res = await fetch(`${API_URL}/api/projects`);
       if (res.ok) {
         const data = await res.json();
         setProjects(data);
@@ -188,7 +189,7 @@ export default function AdminPage() {
   const fetchInquiries = async () => {
     setLoadingData(true);
     try {
-      const res = await fetch('http://localhost:5000/api/inquiries', {
+      const res = await fetch(`${API_URL}/api/inquiries`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -233,7 +234,7 @@ export default function AdminPage() {
     const imgUrl = proj.image
       ? proj.image.startsWith('http')
         ? proj.image
-        : `http://localhost:5000${proj.image}`
+        : `${API_URL}${proj.image}`
       : '';
     setImagePreview(imgUrl);
     setProjectError('');
@@ -284,8 +285,8 @@ export default function AdminPage() {
       }
 
       const url = editingProject
-        ? `http://localhost:5000/api/projects/${editingProject.id}`
-        : 'http://localhost:5000/api/projects';
+        ? `${API_URL}/api/projects/${editingProject.id}`
+        : `${API_URL}/api/projects`;
 
       const method = editingProject ? 'PUT' : 'POST';
 
@@ -316,7 +317,7 @@ export default function AdminPage() {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/projects/${id}`, {
+      const res = await fetch(`${API_URL}/api/projects/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -332,7 +333,7 @@ export default function AdminPage() {
   const handleToggleInquiryStatus = async (id, currentStatus) => {
     const nextStatus = currentStatus === 'unread' ? 'read' : 'unread';
     try {
-      const res = await fetch(`http://localhost:5000/api/inquiries/${id}/status`, {
+      const res = await fetch(`${API_URL}/api/inquiries/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -351,7 +352,7 @@ export default function AdminPage() {
   const handleDeleteInquiry = async (id) => {
     if (!window.confirm('Are you sure you want to delete this inquiry message?')) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/inquiries/${id}`, {
+      const res = await fetch(`${API_URL}/api/inquiries/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -690,7 +691,7 @@ export default function AdminPage() {
                   const imgUrl = proj.image
                     ? proj.image.startsWith('http')
                       ? proj.image
-                      : `http://localhost:5000${proj.image}`
+                      : `${API_URL}${proj.image}`
                     : '';
 
                   return (

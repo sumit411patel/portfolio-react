@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Search, FolderGit2 } from 'lucide-react';
 import ProjectCard from '../components/ProjectCard';
+import { API_URL } from '../config/api';
 
 export default function AllProjectsPage() {
   const [projects, setProjects] = useState([]);
@@ -15,7 +16,7 @@ export default function AllProjectsPage() {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/projects');
+      const res = await fetch(`${API_URL}/api/projects`);
       if (res.ok) {
         const data = await res.json();
         setProjects(data);

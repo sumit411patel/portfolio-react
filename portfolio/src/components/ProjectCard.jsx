@@ -1,5 +1,6 @@
 import React from 'react';
 import { ExternalLink, Code2 } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 export default function ProjectCard({ project }) {
   // Ensure image URL correctly resolves to backend host if relative
@@ -8,7 +9,7 @@ export default function ProjectCard({ project }) {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
-    return `http://localhost:5000${url}`;
+    return `${API_URL}${url}`;
   };
 
   const toolsList = Array.isArray(project.tools)

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ProjectCard from './ProjectCard';
+import { API_URL } from '../config/api';
 
 export default function WorkSection() {
   const [projects, setProjects] = useState([]);
@@ -12,7 +13,7 @@ export default function WorkSection() {
 
   const fetchTopProjects = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/projects');
+      const res = await fetch(`${API_URL}/api/projects`);
       if (res.ok) {
         const data = await res.json();
         setProjects(data);
