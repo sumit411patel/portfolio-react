@@ -39,59 +39,47 @@ router.post('/send-otp', async (req, res) => {
     const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
     const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
 
-    let emailSent = false;
-    let devOtp = null;
-
     if (smtpUser && smtpPass) {
-      try {
-        const transporter = nodemailer.createTransport({
-          host: smtpHost,
-          port: smtpPort,
-          secure: smtpPort === 465,
-          auth: {
-            user: smtpUser,
-            pass: smtpPass
-          }
-        });
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass
+        }
+      });
 
-        await transporter.sendMail({
-          from: `"Sumit Patel Portfolio Admin" <${smtpUser}>`,
-          to: requestedEmail,
-          subject: 'Your Admin Login OTP Code',
-          text: `Your Admin OTP login code is: ${otp}. Valid for 10 minutes.`,
-          html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #09090b; color: #ffffff; border-radius: 12px;">
-              <h2 style="color: #FF6B2B; margin-top: 0;">Admin Portal OTP Verification</h2>
-              <p>Use the OTP code below to sign in to your Portfolio Admin Panel:</p>
-              <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #FF6B2B; background: #18181b; padding: 16px; text-align: center; border-radius: 8px; margin: 20px 0;">
-                ${otp}
-              </div>
-              <p style="color: #a1a1aa; font-size: 13px;">This OTP will expire in 10 minutes. If you did not request this, please ignore this email.</p>
+      await transporter.sendMail({
+        from: `"Sumit Patel Portfolio Admin" <${smtpUser}>`,
+        to: requestedEmail,
+        subject: 'Your Admin Login OTP Code',
+        text: `Your Admin OTP login code is: ${otp}. Valid for 10 minutes.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #09090b; color: #ffffff; border-radius: 12px;">
+            <h2 style="color: #FF6B2B; margin-top: 0;">Admin Portal OTP Verification</h2>
+            <p>Use the OTP code below to sign in to your Portfolio Admin Panel:</p>
+            <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #FF6B2B; background: #18181b; padding: 16px; text-align: center; border-radius: 8px; margin: 20px 0;">
+              ${otp}
             </div>
-          `
-        });
-        emailSent = true;
-      } catch (err) {
-        console.error('SMTP Email sending error:', err.message);
-        devOtp = otp;
-      }
-    } else {
-      console.log(`\n==========================================`);
-      console.log(`🔑 [DEV OTP] Admin OTP for ${requestedEmail}: ${otp}`);
-      console.log(`==========================================\n`);
-      devOtp = otp;
-    }
+            <p style="color: #a1a1aa; font-size: 13px;">This OTP will expire in 10 minutes. If you did not request this, please ignore this email.</p>
+          </div>
+        `
+      });
 
-    return res.json({
-      success: true,
-      message: emailSent
-        ? `OTP sent successfully to ${requestedEmail}`
-        : `OTP generated successfully. (Dev mode: check console or use OTP below)`,
-      devOtp: devOtp
-    });
+      return res.json({
+        success: true,
+        message: `OTP sent successfully to ${requestedEmail}`
+      });
+    } else {
+      console.error('SMTP configuration missing in .env!');
+      return res.status(500).json({
+        error: 'SMTP email configuration is missing or incomplete on the server.'
+      });
+    }
   } catch (err) {
     console.error('Send OTP error:', err);
-    return res.status(500).json({ error: 'Failed to send OTP: ' + err.message });
+    return res.status(500).json({ error: 'Failed to send OTP email: ' + err.message });
   }
 });
 

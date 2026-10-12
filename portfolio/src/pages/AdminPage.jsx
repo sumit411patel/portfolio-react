@@ -29,7 +29,6 @@ export default function AdminPage() {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [devOtp, setDevOtp] = useState(null);
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
@@ -87,7 +86,6 @@ export default function AdminPage() {
     localStorage.removeItem('adminToken');
     setToken('');
     setOtpSent(false);
-    setDevOtp(null);
   };
 
   // ---------------- AUTH HANDLERS ----------------
@@ -97,7 +95,6 @@ export default function AdminPage() {
 
     setAuthLoading(true);
     setAuthError('');
-    setDevOtp(null);
 
     try {
       const res = await fetch(`${API_URL}/api/auth/send-otp`, {
@@ -110,10 +107,6 @@ export default function AdminPage() {
 
       if (res.ok && data.success) {
         setOtpSent(true);
-        if (data.devOtp) {
-          setDevOtp(data.devOtp);
-          setOtp(data.devOtp); // Auto-fill for friction-free dev testing
-        }
       } else {
         setAuthError(data.error || 'Failed to send OTP code.');
       }
@@ -385,16 +378,6 @@ export default function AdminPage() {
             <div className="mb-6 bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-4 rounded-xl flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{authError}</span>
-            </div>
-          )}
-
-          {devOtp && (
-            <div className="mb-6 bg-accent/10 border border-accent/30 text-accent text-xs p-4 rounded-xl flex items-center justify-between">
-              <div>
-                <p className="font-bold">🔑 Dev Mode OTP Code:</p>
-                <p className="text-lg font-mono tracking-widest mt-0.5">{devOtp}</p>
-              </div>
-              <span className="text-[10px] bg-accent text-white px-2 py-1 rounded">Auto-filled</span>
             </div>
           )}
 
