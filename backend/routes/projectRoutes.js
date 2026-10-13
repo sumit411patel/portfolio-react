@@ -5,22 +5,14 @@ const path = require('path');
 const fs = require('fs');
 const { Project } = require('../db');
 const { requireAdminAuth } = require('../middleware/auth');
+const {
+  isCloudinaryConfigured,
+  uploadToCloudinary,
+  deleteFromCloudinary
+} = require('../config/cloudinary');
 
-// Configure Multer Storage for Uploading Project Images
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '..', 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, 'project-' + uniqueSuffix + ext);
-  }
-});
+// Configure Multer Memory Storage for Uploading Project Images
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -33,6 +25,7 @@ const upload = multer({
     }
   }
 });
+
 
 // GET all projects
 router.get('/', async (req, res) => {
@@ -68,7 +61,20 @@ router.post('/', requireAdminAuth, upload.single('imageFile'), async (req, res) 
 
     let finalImagePath = '';
     if (req.file) {
-      finalImagePath = '/uploads/' + req.file.filename;
+      if (isCloudinaryConfigured()) {
+        const cloudRes = await uploadToCloudinary(req.file.buffer, 'portfolio');
+        finalImagePath = cloudRes.secure_url;
+      } else {
+        const uploadDir = path.join(__dirname, '..', 'uploads');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const ext = path.extname(req.file.originalname) || '.png';
+        const filename = 'project-' + uniqueSuffix + ext;
+        fs.writeFileSync(path.join(uploadDir, filename), req.file.buffer);
+        finalImagePath = '/uploads/' + filename;
+      }
     } else if (imageUrl && imageUrl.trim()) {
       finalImagePath = imageUrl.trim();
     } else {
@@ -117,7 +123,24 @@ router.put('/:id', requireAdminAuth, upload.single('imageFile'), async (req, res
 
     let finalImagePath = existing.image;
     if (req.file) {
-      finalImagePath = '/uploads/' + req.file.filename;
+      if (isCloudinaryConfigured()) {
+        const cloudRes = await uploadToCloudinary(req.file.buffer, 'portfolio');
+        finalImagePath = cloudRes.secure_url;
+        // Clean up previous image if it was on Cloudinary and changed
+        if (existing.image && existing.image.includes('cloudinary.com') && existing.image !== finalImagePath) {
+          deleteFromCloudinary(existing.image).catch(err => console.error('Cloudinary cleanup error:', err));
+        }
+      } else {
+        const uploadDir = path.join(__dirname, '..', 'uploads');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const ext = path.extname(req.file.originalname) || '.png';
+        const filename = 'project-' + uniqueSuffix + ext;
+        fs.writeFileSync(path.join(uploadDir, filename), req.file.buffer);
+        finalImagePath = '/uploads/' + filename;
+      }
     } else if (imageUrl && imageUrl.trim()) {
       finalImagePath = imageUrl.trim();
     }
@@ -165,6 +188,11 @@ router.delete('/:id', requireAdminAuth, async (req, res) => {
     }
 
     await Project.findByIdAndDelete(projectId);
+
+    // Clean up image on Cloudinary
+    if (existing.image && existing.image.includes('cloudinary.com')) {
+      await deleteFromCloudinary(existing.image);
+    }
 
     // Optionally delete uploaded image file if it's local
     if (existing.image && existing.image.startsWith('/uploads/default-') === false && existing.image.startsWith('/uploads/')) {
