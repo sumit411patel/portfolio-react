@@ -5,7 +5,7 @@ export default function SkillsSection() {
     {
       title: 'Core Languages',
       subgroups: [
-        { label: 'PROFICIENT', skills: ['Python', 'Javascript'], type: 'proficient' },
+        { label: 'PROFICIENT', skills: ['Python', 'Javascript', 'C#'], type: 'proficient' },
       ],
     },
     {
@@ -32,7 +32,7 @@ export default function SkillsSection() {
     {
       title: 'Backend',
       subgroups: [
-        { skills: ['Django', 'Express.js', 'Node.js'], type: 'proficient' },
+        { skills: ['Django', 'Express.js', 'Node.js', '.NET'], type: 'proficient' },
       ],
     },
     {
